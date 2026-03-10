@@ -1,0 +1,41 @@
+name: Update ETF Flows
+
+on:
+  schedule:
+    # 11h BRT (UTC-3) = 14h UTC, seg–sex
+    - cron: "0 14 * * 1-5"
+  workflow_dispatch: # permite rodar manualmente pelo GitHub
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Rodar script
+        env:
+          BTC_CSV:    data/ETF flow - BTC.csv
+          ETH_CSV:    data/ETF flow - ETH.csv
+          CHART_HTML: docs/index.html
+        run: python etf_flows_update.py
+
+      - name: Commit e push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ docs/
+          git diff --staged --quiet || \
+            git commit -m "chore: atualiza ETF flows $(date +%Y-%m-%d)"
+          git push
